@@ -28,8 +28,16 @@ import globals from "globals";
 import pluginTypescript from "typescript-eslint";
 
 export default [
-  { files: ["**/*.{js,mjs,cjs,ts,jsx,tsx}"] },
-  { languageOptions: { globals: globals.browser } },
+  { files: ['**/*.{js,mjs,cjs,ts,jsx,tsx}'] },
+  {
+    languageOptions: {
+      parser: pluginTypescript.parser,
+      globals: {
+        ...globals.node,
+        ...globals.browser
+      }
+    }
+  },
   ...pluginTypescript.configs.recommended,
   pluginReact.configs.flat.recommended,
   pluginJs.configs.recommended,
@@ -46,9 +54,6 @@ export default [
       "react/react-in-jsx-scope": "off",
       "no-unused-vars": "off",
       "@typescript-eslint/no-unused-vars": "warn",
-    },
-    globals: {
-      __dirname: true
     },
     settings: {
       react: {
