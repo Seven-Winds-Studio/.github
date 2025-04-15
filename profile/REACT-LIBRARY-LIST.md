@@ -5,3 +5,6 @@
 
 ### React Firebase Push
 [React Firebase Push](https://github.com/Seven-Winds-Studio/react-firebase-push) - библиотека для работы с пушами от Firebase в React.
+
+### React Cades
+[React Cades](https://github.com/Seven-Winds-Studio/react-cades) - библиотека для работы с электронной подписью.
