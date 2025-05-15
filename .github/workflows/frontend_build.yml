@@ -46,8 +46,9 @@ jobs:
 
       - name: Configure .npmrc for GitHub Packages
         run: |
-          echo "//npm.pkg.github.com/:_authToken=${{ secrets.ACCESS_GITHUB_TOKEN }}" > ~/.npmrc
-          echo "@seven-winds-studio:registry=https://npm.pkg.github.com/" >> ~/.npmrc
+          echo "//npm.pkg.github.com/:_authToken=${{ secrets.ACCESS_GITHUB_TOKEN }}" > .npmrc
+          echo "@seven-winds-studio:registry=https://npm.pkg.github.com/" >> .npmrc
+          cp .npmrc ~/.npmrc
 
       - name: Define version type
         id: version_type
@@ -109,6 +110,7 @@ jobs:
 
       - name: Install dependencies
         env:
+          BUN_AUTH_TOKEN: ${{ secrets.ACCESS_GITHUB_TOKEN }}
           NPM_CONFIG_USERCONFIG: ~/.npmrc
         run: |
           case "${{ inputs.package_manager }}" in
