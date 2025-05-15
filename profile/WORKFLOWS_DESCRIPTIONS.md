@@ -97,7 +97,7 @@
         version_type: ${{ inputs.version_type }}
         package_manager: ${{ inputs.package_manager }}
       secrets:
-        NPM_TOKEN: ${{ secrets.NPM_CYRILSTRONE_TOKEN }}
+        NPM_TOKEN: ${{ secrets.NPM_ORGANIZATION_TOKEN }}
         ACCESS_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN  }}
   ```
 
