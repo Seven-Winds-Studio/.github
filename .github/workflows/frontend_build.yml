@@ -12,15 +12,23 @@ on:
         required: false
         default: "npm"
         type: string
+      frontend_mode:
+        description: "Frontend deploy path"
+        required: true
+        type: string
+      server_host_name:
+        description: "Server host"
+        required: true
+        type: string
+      server_user_name:
+        description: "Server user"
+        required: true
+        type: string
+      frontend_mode_notification:
+        description: "Frontend notification path"
+        required: true
+        type: string
     secrets:
-      FRONTEND_MODE:
-        required: true
-      SERVER_HOST_MODE:
-        required: true
-      SERVER_USER_MODE:
-        required: true
-      FRONTEND_MODE_NOTIFICATION:
-        required: true
       SSH_PRIVATE_KEY:
         required: true
       ACCESS_GITHUB_TOKEN:
@@ -203,19 +211,19 @@ jobs:
         with:
           switches: -avz --delete --delete-excluded --exclude='.git' --exclude='.github'
           path: build/ # только build
-          remote_path: ${{ secrets.FRONTEND_MODE }}
-          remote_host: ${{ secrets.SERVER_HOST_MODE }}
-          remote_user: ${{ secrets.SERVER_USER_MODE }}
+          remote_path: ${{ inputs.frontend_mode }}
+          remote_host: ${{ inputs.server_host_name }}
+          remote_user: ${{ inputs.server_user_name }}
           remote_key: ${{ secrets.SSH_PRIVATE_KEY }}
 
       - name: Run frontend updater on server
         uses: appleboy/ssh-action@v1.0.0
         with:
-          host: ${{ secrets.SERVER_HOST_MODE }}
-          username: ${{ secrets.SERVER_USER_MODE }}
+          host: ${{ inputs.server_host_name }}
+          username: ${{ inputs.server_user_name }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            cd ${{ secrets.FRONTEND_MODE_NOTIFICATION }}
+            cd ${{ inputs.frontend_mode_notification }}
             echo "Deploying commit: ${{ env.GIT_COMMIT }}"
             echo "Author: ${{ env.GIT_AUTHOR }}"
             echo "Message: ${{ env.GIT_MESSAGE }}"
