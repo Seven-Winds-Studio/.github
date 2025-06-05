@@ -215,7 +215,7 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     strategy:
-      matrix: ${{ fromJson(needs.build.outputs.matrix).include }}
+      matrix: ${{ fromJson(needs.build.outputs.matrix) }}
     steps:
       - name: Print full matrix
         run: echo "${{ toJson(matrix) }}"
