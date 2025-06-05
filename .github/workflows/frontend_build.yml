@@ -16,11 +16,11 @@ on:
         description: "Frontend deploy path"
         required: true
         type: string
-      server_host_name:
+      server_host_mode:
         description: "Server host"
         required: true
         type: string
-      server_user_name:
+      server_user_mode:
         description: "Server user"
         required: true
         type: string
