@@ -208,9 +208,11 @@ jobs:
       - name: Generate config for matrix
         id: matrix
         run: |
-          echo "Raw array_config_mode input: ${{ inputs.array_config_mode }}"
+          echo "Raw array_config_mode input:"
+          echo '${{ inputs.array_config_mode }}' | jq .
+
           matrix_json=$(echo '${{ inputs.array_config_mode }}' | jq -c '{include: .}')
-          echo "matrix=$matrix_json" >> $GITHUB_OUTPUT
+          echo "matrix=$matrix_json" >> "$GITHUB_OUTPUT"
 
   deploy:
     needs: build
