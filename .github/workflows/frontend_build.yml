@@ -189,7 +189,7 @@ jobs:
           publish_dir: build
           force_orphan: true
 
-      - name: Get commit info from build branch
+      - name: Generate git info for matrix
         id: git_info
         run: |
           git fetch origin build_${{ github.ref_name }}:build_tmp_branch
@@ -205,9 +205,11 @@ jobs:
           echo "GIT_AUTHOR=$GIT_AUTHOR" >> $GITHUB_OUTPUT
           echo "GIT_MESSAGE=$GIT_MESSAGE" >> $GITHUB_OUTPUT
 
-      - name: Generate deploy matrix
+      - name: Generate config for matrix
         id: matrix
         run: |
+          echo "Input array_config_mode: ${{ inputs.array_config_mode }}"
+
           echo '${{ inputs.array_config_mode }}' | jq empty || {
             echo "Invalid JSON in array_config_mode"
             exit 1
