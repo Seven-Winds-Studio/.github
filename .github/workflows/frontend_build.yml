@@ -12,19 +12,7 @@ on:
         required: false
         default: "npm"
         type: string
-      frontend_mode:
-        description: "Frontend deploy path"
-        required: true
-        type: string
-      server_host_mode:
-        description: "Server host"
-        required: true
-        type: string
-      server_user_mode:
-        description: "Server user"
-        required: true
-        type: string
-      frontend_mode_notification:
+      array_config_mode:
         description: "Frontend notification path"
         required: true
         type: string
@@ -36,6 +24,11 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.matrix.outputs.matrix }}
+      GIT_COMMIT: ${{ steps.git_info.outputs.GIT_COMMIT }}
+      GIT_AUTHOR: ${{ steps.git_info.outputs.GIT_AUTHOR }}
+      GIT_MESSAGE: ${{ steps.git_info.outputs.GIT_MESSAGE }}
 
     steps:
       - name: Checkout repository
@@ -95,10 +88,10 @@ jobs:
           VERSION=$(node -p "require('./package.json').version")
           echo "VERSION=$VERSION" >> $GITHUB_ENV
 
-          if grep -q "VITE_APP_VERSION=" .env; then
+          touch .env
+          if grep -q "^VITE_APP_VERSION=" .env; then
             sed -i "s/^VITE_APP_VERSION=.*/VITE_APP_VERSION=$VERSION/" .env
           else
-            echo "" >> .env
             echo "VITE_APP_VERSION=$VERSION" >> .env
           fi
 
@@ -197,34 +190,52 @@ jobs:
           force_orphan: true
 
       - name: Get commit info from build branch
+        id: git_info
         run: |
           git fetch origin build_${{ github.ref_name }}:build_tmp_branch
           GIT_COMMIT=$(git rev-parse build_tmp_branch)
           GIT_AUTHOR=$(git log -1 --pretty=format:'%an' build_tmp_branch)
           GIT_MESSAGE=$(git log -1 --pretty=format:'%s' build_tmp_branch)
+          
           echo "GIT_COMMIT=$GIT_COMMIT" >> $GITHUB_ENV
           echo "GIT_AUTHOR=$GIT_AUTHOR" >> $GITHUB_ENV
           echo "GIT_MESSAGE=$GIT_MESSAGE" >> $GITHUB_ENV
 
-      - name: Sync files to server
+          echo "GIT_COMMIT=$GIT_COMMIT" >> $GITHUB_OUTPUT
+          echo "GIT_AUTHOR=$GIT_AUTHOR" >> $GITHUB_OUTPUT
+          echo "GIT_MESSAGE=$GIT_MESSAGE" >> $GITHUB_OUTPUT
+
+      - name: Generate deploy matrix
+        id: matrix
+        run: |
+          echo '${{ inputs.array_config_mode }}' | jq empty || {
+            echo "Invalid JSON in array_config_mode"
+            exit 1
+          }
+          echo "matrix=$(echo '${{ inputs.array_config_mode }}' | jq -c '{include: .}')" >> $GITHUB_OUTPUT
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    strategy:
+      matrix: ${{ fromJson(needs.build.outputs.matrix) }}
+    steps:
+      - name: Rsync build to server
         uses: burnett01/rsync-deployments@7.0.2
         with:
           switches: -avz --delete --delete-excluded --exclude='.git' --exclude='.github'
-          path: build/ # только build
-          remote_path: ${{ inputs.frontend_mode }}
-          remote_host: ${{ inputs.server_host_mode }}
-          remote_user: ${{ inputs.server_user_mode }}
+          path: build/
+          remote_path: ${{ matrix.include.frontend_mode }}
+          remote_host: ${{ matrix.include.server_host_mode }}
+          remote_user: ${{ matrix.include.server_user_mode }}
           remote_key: ${{ secrets.SSH_PRIVATE_KEY }}
 
       - name: Run frontend updater on server
         uses: appleboy/ssh-action@v1.0.0
         with:
-          host: ${{ inputs.server_host_mode }}
-          username: ${{ inputs.server_user_mode }}
+          host: ${{ matrix.include.server_host_mode }}
+          username: ${{ matrix.include.server_user_mode }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            cd ${{ inputs.frontend_mode_notification }}
-            echo "Deploying commit: ${{ env.GIT_COMMIT }}"
-            echo "Author: ${{ env.GIT_AUTHOR }}"
-            echo "Message: ${{ env.GIT_MESSAGE }}"
-            ./frontend_update.sh "${{ env.GIT_COMMIT }}" "${{ env.GIT_AUTHOR }}" "${{ env.GIT_MESSAGE }}"
+            cd ${{ matrix.include.frontend_mode_notification }}
+            ./frontend_update.sh "${{ needs.build.outputs.GIT_COMMIT }}" "${{ needs.build.outputs.GIT_AUTHOR }}" "${{ needs.build.outputs.GIT_MESSAGE }}"
