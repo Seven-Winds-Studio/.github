@@ -212,15 +212,15 @@ jobs:
           switches: -avz --delete --delete-excluded --exclude='.git' --exclude='.github'
           path: build/ # только build
           remote_path: ${{ inputs.frontend_mode }}
-          remote_host: ${{ inputs.server_host_name }}
-          remote_user: ${{ inputs.server_user_name }}
+          remote_host: ${{ inputs.server_host_mode }}
+          remote_user: ${{ inputs.server_user_mode }}
           remote_key: ${{ secrets.SSH_PRIVATE_KEY }}
 
       - name: Run frontend updater on server
         uses: appleboy/ssh-action@v1.0.0
         with:
-          host: ${{ inputs.server_host_name }}
-          username: ${{ inputs.server_user_name }}
+          host: ${{ inputs.server_host_mode }}
+          username: ${{ inputs.server_user_mode }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             cd ${{ inputs.frontend_mode_notification }}
