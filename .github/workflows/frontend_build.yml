@@ -13,6 +13,16 @@ on:
         default: "npm"
         type: string
     secrets:
+      FRONTEND_MODE:
+        required: true
+      SERVER_HOST_MODE:
+        required: true
+      SERVER_USER_MODE:
+        required: true
+      FRONTEND_MODE_NOTIFICATION:
+        required: true
+      SSH_PRIVATE_KEY:
+        required: true
       ACCESS_GITHUB_TOKEN:
         required: true
 jobs:
@@ -177,3 +187,36 @@ jobs:
           publish_branch: "build_${{ github.ref_name }}"
           publish_dir: build
           force_orphan: true
+
+      - name: Get commit info from build branch
+        run: |
+          git fetch origin build_${{ github.ref_name }}:build_tmp_branch
+          GIT_COMMIT=$(git rev-parse build_tmp_branch)
+          GIT_AUTHOR=$(git log -1 --pretty=format:'%an' build_tmp_branch)
+          GIT_MESSAGE=$(git log -1 --pretty=format:'%s' build_tmp_branch)
+          echo "GIT_COMMIT=$GIT_COMMIT" >> $GITHUB_ENV
+          echo "GIT_AUTHOR=$GIT_AUTHOR" >> $GITHUB_ENV
+          echo "GIT_MESSAGE=$GIT_MESSAGE" >> $GITHUB_ENV
+
+      - name: Sync files to server
+        uses: burnett01/rsync-deployments@7.0.2
+        with:
+          switches: -avz --delete --delete-excluded --exclude='.git' --exclude='.github'
+          path: build/ # только build
+          remote_path: ${{ secrets.FRONTEND_MODE }}
+          remote_host: ${{ secrets.SERVER_HOST_MODE }}
+          remote_user: ${{ secrets.SERVER_USER_MODE }}
+          remote_key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Run frontend updater on server
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.SERVER_HOST_MODE }}
+          username: ${{ secrets.SERVER_USER_MODE }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd ${{ vars.FRONTEND_MODE_NOTIFICATION }}
+            echo "Deploying commit: ${{ env.GIT_COMMIT }}"
+            echo "Author: ${{ env.GIT_AUTHOR }}"
+            echo "Message: ${{ env.GIT_MESSAGE }}"
+            ./frontend_update.sh "${{ env.GIT_COMMIT }}" "${{ env.GIT_AUTHOR }}" "${{ env.GIT_MESSAGE }}"
