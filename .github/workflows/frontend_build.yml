@@ -209,7 +209,7 @@ jobs:
         id: matrix
         run: |
           MATRIX_JSON='${{ inputs.array_config_mode }}'
-          echo "matrix={\"include\": $MATRIX_JSON}" >> $GITHUB_OUTPUT
+          echo "matrix=$MATRIX_JSON" >> $GITHUB_OUTPUT
 
   deploy:
     needs: build
@@ -224,17 +224,17 @@ jobs:
         with:
           switches: -avz --delete --delete-excluded --exclude='.git' --exclude='.github'
           path: build/
-          remote_path: ${{ matrix.include.frontend_mode }}
-          remote_host: ${{ matrix.include.server_host_mode }}
-          remote_user: ${{ matrix.include.server_user_mode }}
+          remote_path: ${{ matrix.frontend_mode }}
+          remote_host: ${{ matrix.server_host_mode }}
+          remote_user: ${{ matrix.server_user_mode }}
           remote_key: ${{ secrets.SSH_PRIVATE_KEY }}
 
       - name: Run frontend updater on server
         uses: appleboy/ssh-action@v1.0.0
         with:
-          host: ${{ matrix.include.server_host_mode }}
-          username: ${{ matrix.include.server_user_mode }}
+          host: ${{ matrix.server_host_mode }}
+          username: ${{ matrix.server_user_mode }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            cd ${{ matrix.include.frontend_mode_notification }}
+            cd ${{ matrix.frontend_mode_notification }}
             ./frontend_update.sh "${{ needs.build.outputs.GIT_COMMIT }}" "${{ needs.build.outputs.GIT_AUTHOR }}" "${{ needs.build.outputs.GIT_MESSAGE }}"
