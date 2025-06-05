@@ -215,7 +215,7 @@ jobs:
           username: ${{ secrets.SERVER_USER_MODE }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            cd ${{ vars.FRONTEND_MODE_NOTIFICATION }}
+            cd ${{ secrets.FRONTEND_MODE_NOTIFICATION }}
             echo "Deploying commit: ${{ env.GIT_COMMIT }}"
             echo "Author: ${{ env.GIT_AUTHOR }}"
             echo "Message: ${{ env.GIT_MESSAGE }}"
