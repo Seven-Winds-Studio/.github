@@ -209,16 +209,17 @@ jobs:
         id: matrix
         run: |
           MATRIX_JSON='${{ inputs.array_config_mode }}'
-          echo "matrix=$MATRIX_JSON" >> $GITHUB_OUTPUT
+          echo "matrix={\"include\": $MATRIX_JSON}" >> $GITHUB_OUTPUT
 
   deploy:
     needs: build
     runs-on: ubuntu-latest
     strategy:
-      matrix: ${{ fromJson(needs.build.outputs.matrix) }}
+      matrix: ${{ fromJson(needs.build.outputs.matrix).include }}
     steps:
       - name: Print full matrix
-        run: echo "${{ toJson(matrix) }}" 
+        run: echo "${{ toJson(matrix) }}"
+
       - name: Rsync build to server
         uses: burnett01/rsync-deployments@7.0.2
         with:
