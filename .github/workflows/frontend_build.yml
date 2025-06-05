@@ -210,10 +210,13 @@ jobs:
         run: |
           echo "Input array_config_mode: ${{ inputs.array_config_mode }}"
 
+          # Проверка валидности JSON
           echo '${{ inputs.array_config_mode }}' | jq empty || {
             echo "Invalid JSON in array_config_mode"
             exit 1
           }
+          
+          # Формируем matrix с ключом include
           echo "matrix=$(echo '${{ inputs.array_config_mode }}' | jq -c '{include: .}')" >> $GITHUB_OUTPUT
 
   deploy:
@@ -222,6 +225,8 @@ jobs:
     strategy:
       matrix: ${{ fromJson(needs.build.outputs.matrix) }}
     steps:
+      - name: Print full matrix
+        run: echo "${{ toJson(matrix) }}" 
       - name: Rsync build to server
         uses: burnett01/rsync-deployments@7.0.2
         with:
