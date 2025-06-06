@@ -146,12 +146,6 @@ jobs:
               ;;
           esac
 
-      - name: Upload build artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: frontend-build
-          path: build/
-
       - name: Push
         if: env.VERSION_TYPE != 'none'
         run: |
@@ -186,6 +180,12 @@ jobs:
           fi
           echo "commit: $COMMIT" >> build/build-info.txt
           echo "date: $DATE" >> build/build-info.txt
+
+      - name: Upload   build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-build
+          path: build/
 
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v4
