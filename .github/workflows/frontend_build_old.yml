@@ -1,0 +1,179 @@
+name: Frontend Build
+
+on:
+  workflow_call:
+    inputs:
+      version_type:
+        description: "major | minor | patch | none"
+        required: false
+        type: string
+      package_manager:
+        description: "npm | yarn | bun"
+        required: false
+        default: "npm"
+        type: string
+    secrets:
+      ACCESS_GITHUB_TOKEN:
+        required: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20.x"
+
+      - name: Setup Bun
+        if: inputs.package_manager == 'bun'
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      - name: Clean Git
+        run: |
+          git reset --hard || echo "No changes to reset"
+          git clean -fd || echo "No files to clean"
+
+      - name: Configure Git
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+
+      - name: Configure .npmrc for GitHub Packages
+        run: |
+          echo "//npm.pkg.github.com/:_authToken=${{ secrets.ACCESS_GITHUB_TOKEN }}" > .npmrc
+          echo "@seven-winds-studio:registry=https://npm.pkg.github.com/" >> .npmrc
+          if [ -f .npmrc ]; then cp .npmrc ~/.npmrc; fi
+
+      - name: Define version type
+        id: version_type
+        run: |
+          echo "Version type input: ${{ inputs.version_type }}"
+
+          if [[ -n "${{ inputs.version_type }}" ]]; then
+            VERSION_TYPE="${{ inputs.version_type }}"
+            echo "VERSION_TYPE=$VERSION_TYPE" >> $GITHUB_ENV
+          else
+            echo "No version bump requested. Skipping versioning."
+            echo "VERSION_TYPE=none" >> $GITHUB_ENV
+          fi
+
+      - name: Bump version
+        if: env.VERSION_TYPE != 'none'
+        run: |
+          if [[ "$VERSION_TYPE" == "major" ]]; then
+            npx standard-version --release-as major --skip.commit --skip.tag
+          elif [[ "$VERSION_TYPE" == "minor" ]]; then
+            npx standard-version --release-as minor --skip.commit --skip.tag
+          elif [[ "$VERSION_TYPE" == "patch" ]]; then
+            npx standard-version --release-as patch --skip.commit --skip.tag
+          fi
+
+          VERSION=$(node -p "require('./package.json').version")
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+
+          if grep -q "VITE_APP_VERSION=" .env; then
+            sed -i "s/^VITE_APP_VERSION=.*/VITE_APP_VERSION=$VERSION/" .env
+          else
+            echo "" >> .env
+            echo "VITE_APP_VERSION=$VERSION" >> .env
+          fi
+
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.npm
+            ~/.cache/yarn
+            ~/.bun/install/cache
+          key: |
+            r1/${{ runner.os }}/${{ inputs.package_manager }}/deps/${{ hashFiles('**/package-lock.json', '**/yarn.lock', '**/bun.lockb') }}
+          restore-keys: |
+            r1/${{ runner.os }}/${{ inputs.package_manager }}/deps/
+
+      - name: Install dependencies
+        env:
+          BUN_AUTH_TOKEN: ${{ secrets.ACCESS_GITHUB_TOKEN }}
+          NPM_CONFIG_USERCONFIG: ~/.npmrc
+        run: |
+          case "${{ inputs.package_manager }}" in
+            npm)
+              npm ci
+              ;;
+            yarn)
+              corepack enable
+              yarn install --frozen-lockfile
+              ;;
+            bun)
+              bun install --no-save
+              ;;
+            *)
+              echo "Unknown package manager: ${{ inputs.package_manager }}"
+              exit 1
+              ;;
+          esac
+
+      - name: Build
+        run: |
+          BRANCH_NAME="${{ github.ref_name }}"
+          echo "Building for branch: $BRANCH_NAME"
+
+          case "${{ inputs.package_manager }}" in
+            npm)
+              npm run build:$BRANCH_NAME
+              ;;
+            yarn)
+              yarn build:$BRANCH_NAME
+              ;;
+            bun)
+              bun run build:$BRANCH_NAME
+              ;;
+          esac
+
+      - name: Push
+        if: env.VERSION_TYPE != 'none'
+        run: |
+          git add -u
+
+          if ! git diff --cached --quiet; then
+            git commit -m "version: $VERSION"
+            git tag -a "v$VERSION" -m "version: $VERSION"
+          else
+            echo "Nothing to commit"
+          fi
+
+          git push origin HEAD:${{ github.ref_name }}
+          git push origin "v$VERSION"
+
+      - name: Fetch all tags
+        run: git fetch --tags
+
+      - name: Write build info
+        run: |
+          VERSION="${VERSION:-}"
+          if [ -z "$VERSION" ]; then
+            # Получить последний тег, начинающийся с v
+            VERSION=$(git tag --list 'v*' --sort=-creatordate | head -n 1 | sed 's/^v//')
+          fi
+          COMMIT="$(git rev-parse --short HEAD)"
+          DATE="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+          if [ -n "$VERSION" ]; then
+            echo "version: $VERSION" > build/build-info.txt
+          else
+            echo "version: none" > build/build-info.txt
+          fi
+          echo "commit: $COMMIT" >> build/build-info.txt
+          echo "date: $DATE" >> build/build-info.txt
+
+      - name: Deploy
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.ACCESS_GITHUB_TOKEN }}
+          publish_branch: "build_${{ github.ref_name }}"
+          publish_dir: build
+          force_orphan: true
