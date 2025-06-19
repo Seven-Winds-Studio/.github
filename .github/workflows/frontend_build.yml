@@ -280,15 +280,14 @@ jobs:
             ${{ matrix.discord_hook }}
 
   notify-deploy-failure:
-    if: failure() && needs.deploy.result == 'failure'
     needs: deploy
     runs-on: ubuntu-latest
+    if: always()
     strategy:
       matrix: ${{ fromJson(needs.build.outputs.matrix) }}
     steps:
-      - name: Print full matrix
-        run: echo "${{ toJson(matrix) }}"
       - name: Notify Discord
+        if: ${{ needs.deploy.result == 'failure' || needs.deploy.result == 'cancelled' }}
         run: |
           curl -X POST -H "Content-Type: application/json" \
           -d "{\"content\": \"❌ Deployment failed for \`${{ matrix.server_host_mode }}\` to \`${{ matrix.frontend_mode }}\`. Check the logs.\"}" \
