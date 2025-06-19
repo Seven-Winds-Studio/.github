@@ -177,10 +177,10 @@ jobs:
 
           if ! git diff --cached --quiet; then
             git commit -m "version: $FULL_VERSION"
-            git tag -a "v$FULL_VERSION" -m "version: $FULL_VERSION"
-          else
-            echo "Nothing to commit"
           fi
+
+          # Создаем тег всегда, даже если коммита не было
+          git tag -a "v$FULL_VERSION" -m "version: $FULL_VERSION"
 
           git push origin HEAD:${{ github.ref_name }}
           git push origin "v$FULL_VERSION"
