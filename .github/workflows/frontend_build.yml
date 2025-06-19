@@ -74,6 +74,9 @@ jobs:
             echo "VERSION_TYPE=none" >> $GITHUB_ENV
           fi
 
+      - name: Fetch all tags
+        run: git fetch --tags
+
       - name: Bump version
         run: |
           BRANCH_NAME="${{ github.ref_name }}"
@@ -181,9 +184,6 @@ jobs:
 
           git push origin HEAD:${{ github.ref_name }}
           git push origin "v$FULL_VERSION"
-
-      - name: Fetch all tags
-        run: git fetch --tags
 
       - name: Write build info
         run: |
