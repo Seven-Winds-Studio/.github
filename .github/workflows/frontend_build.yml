@@ -271,6 +271,8 @@ jobs:
     strategy:
       matrix: ${{ fromJson(needs.build.outputs.matrix) }}
     steps:
+      - name: Print full matrix
+        run: echo "${{ toJson(matrix) }}"
       - name: Notify Discord
         run: |
           curl -X POST -H "Content-Type: application/json" \
@@ -284,6 +286,8 @@ jobs:
     strategy:
       matrix: ${{ fromJson(needs.build.outputs.matrix) }}
     steps:
+      - name: Print full matrix
+        run: echo "${{ toJson(matrix) }}"
       - name: Notify Discord
         run: |
           curl -X POST -H "Content-Type: application/json" \
