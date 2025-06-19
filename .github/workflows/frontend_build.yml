@@ -272,7 +272,7 @@ jobs:
       matrix: ${{ fromJson(needs.build.outputs.matrix) }}
     steps:
       - name: Notify Discord
-        run:
+        run: |
           curl -X POST -H "Content-Type: application/json" \
           -d "{\"content\": \"❌ Build step failed on branch \`${{ github.ref_name }}\`\"}" \
             ${{ matrix.discord_hook }}
@@ -285,7 +285,7 @@ jobs:
       matrix: ${{ fromJson(needs.build.outputs.matrix) }}
     steps:
       - name: Notify Discord
-        run:
+        run: |
           curl -X POST -H "Content-Type: application/json" \
           -d "{\"content\": \"❌ Deployment failed for \`${{ matrix.server_host_mode }}\` to \`${{ matrix.frontend_mode }}\`. Check the logs.\"}" \
             ${{ matrix.discord_hook }}
