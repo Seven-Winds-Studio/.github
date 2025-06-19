@@ -250,4 +250,4 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             cd ${{ matrix.frontend_mode_notification }}
-            ./frontend_update.sh "${{ needs.build.outputs.GIT_COMMIT }}" "${{ needs.build.outputs.GIT_AUTHOR }}" "${{ needs.build.outputs.GIT_MESSAGE }}"
+            ${{ matrix.frontend_update_script }} "${{ needs.build.outputs.GIT_COMMIT }}" "${{ needs.build.outputs.GIT_AUTHOR }}" "${{ needs.build.outputs.GIT_MESSAGE }}"
