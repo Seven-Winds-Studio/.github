@@ -254,6 +254,14 @@ jobs:
           remote_user: ${{ matrix.server_user_mode }}
           remote_key: ${{ secrets.SSH_PRIVATE_KEY }}
 
+      - name: Notify Discord on deploy failure
+        if: failure()
+        continue-on-error: true
+        run: |
+          curl -X POST -H "Content-Type: application/json" \
+          -d "{\"content\": \"❌ Deployment failed for \`${{ matrix.server_host_mode }}\` to \`${{ matrix.frontend_mode }}\`. Check the logs.\"}" \
+            ${{ matrix.discord_hook }}
+
       - name: Run frontend updater on server
         uses: appleboy/ssh-action@v1.0.0
         with:
@@ -279,16 +287,3 @@ jobs:
           -d "{\"content\": \"❌ Build step failed on branch \`${{ github.ref_name }}\`\"}" \
             ${{ matrix.discord_hook }}
 
-  notify-deploy-failure:
-    needs: deploy
-    runs-on: ubuntu-latest
-    if: always()
-    strategy:
-      matrix: ${{ fromJson(needs.build.outputs.matrix) }}
-    steps:
-      - name: Notify Discord
-        if: ${{ needs.deploy.result == 'failure' || needs.deploy.result == 'cancelled' }}
-        run: |
-          curl -X POST -H "Content-Type: application/json" \
-          -d "{\"content\": \"❌ Deployment failed for \`${{ matrix.server_host_mode }}\` to \`${{ matrix.frontend_mode }}\`. Check the logs.\"}" \
-            ${{ matrix.discord_hook }}
