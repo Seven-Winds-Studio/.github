@@ -263,3 +263,29 @@ jobs:
           script: |
             cd ${{ matrix.frontend_mode_notification }}
             ${{ matrix.frontend_update_script }} "${{ needs.build.outputs.GIT_COMMIT }}" "${{ needs.build.outputs.GIT_AUTHOR }}" "${{ needs.build.outputs.GIT_MESSAGE }}"
+
+  notify-build-failure:
+    if: failure() && needs.build.result == 'failure'
+    needs: build
+    runs-on: ubuntu-latest
+    strategy:
+      matrix: ${{ fromJson(needs.build.outputs.matrix) }}
+    steps:
+      - name: Notify Discord
+        run:
+          curl -X POST -H "Content-Type: application/json" \
+          -d "{\"content\": \"❌ Build step failed on branch \`${{ github.ref_name }}\`\"}" \
+            ${{ matrix.discord_hook }}
+
+  notify-deploy-failure:
+    if: failure() && needs.deploy.result == 'failure'
+    needs: deploy
+    runs-on: ubuntu-latest
+    strategy:
+      matrix: ${{ fromJson(needs.build.outputs.matrix) }}
+    steps:
+      - name: Notify Discord
+        run:
+          curl -X POST -H "Content-Type: application/json" \
+          -d "{\"content\": \"❌ Deployment failed for \`${{ matrix.server_host_mode }}\` to \`${{ matrix.frontend_mode }}\`. Check the logs.\"}" \
+            ${{ matrix.discord_hook }}
