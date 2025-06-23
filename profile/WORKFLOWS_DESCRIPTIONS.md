@@ -10,39 +10,78 @@
 - Пример использования:
 
   ```yml
-  name: Frontend Build Wrapper
+name: Frontend Build Wrapper
 
-  on:
-    workflow_dispatch:
-      inputs:
-        version_type:
-          description: "Version bump"
-          required: false
-          default: "none"
-          type: choice
-          options:
-            - none
-            - major
-            - minor
-            - patch
-        package_manager:
-          description: "Package manager"
-          required: false
-          default: "npm"
-          type: choice
-          options:
-            - npm
-            - yarn
-            - bun
+on:
+  workflow_dispatch:
+    inputs:
+      version_type:
+        description: 'Version bump'
+        required: false
+        default: 'none'
+        type: choice
+        options:
+          - none
+          - major
+          - minor
+          - patch
+      package_manager:
+        description: 'Package manager'
+        required: false
+        default: 'bun'
+        type: choice
+        options:
+          - npm
+          - yarn
+          - bun
+      add_branch_name:
+        description: 'Add branch name to version'
+        required: false
+        type: boolean
+        default: true
+      add_build_number:
+        description: 'Add build number to version'
+        required: false
+        type: boolean
+        default: true
 
-  jobs:
-    call-publisher:
-      uses: seven-winds-studio/.github/.github/workflows/frontend_build.yml@main
-      with:
-        version_type: ${{ inputs.version_type }}
-        package_manager: ${{ inputs.package_manager }}
-      secrets:
-        ACCESS_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN  }}
+jobs:
+  alpha:
+    if: github.ref_name == 'alpha'
+    uses: seven-winds-studio/.github/.github/workflows/frontend_build.yml@main
+    with:
+      version_type: ${{ inputs.version_type }}
+      package_manager: ${{ inputs.package_manager }}
+      array_config_mode: ${{ vars.CONFIG_DEV }}
+      add_branch_name: ${{ inputs.add_branch_name }}
+      add_build_number: ${{ inputs.add_build_number }}
+
+    secrets:
+      SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY_DEV }}
+      ACCESS_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  prod:
+    if: github.ref_name == 'prod'
+    uses: seven-winds-studio/.github/.github/workflows/frontend_build_old.yml@main
+    with:
+      version_type: ${{ inputs.version_type }}
+      package_manager: ${{ inputs.package_manager }}
+    secrets:
+      ACCESS_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  demo:
+    if: github.ref_name == 'demo'
+    uses: seven-winds-studio/.github/.github/workflows/frontend_build.yml@main
+    with:
+      version_type: ${{ inputs.version_type }}
+      package_manager: ${{ inputs.package_manager }}
+      array_config_mode: ${{ vars.CONFIG_DEMO }}
+      add_branch_name: ${{ inputs.add_branch_name }}
+      add_build_number: ${{ inputs.add_build_number }}
+
+    secrets:
+      SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY_PROD }}
+      ACCESS_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   ```
 
 ---
