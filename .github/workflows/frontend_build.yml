@@ -21,11 +21,17 @@ on:
         type: boolean
       array_config_mode:
         description: "Frontend notification path"
-        required: true
+        required: false
         type: string
+      deploy_to_server:
+        description: "Should deploy to server"
+        required: false
+        type: boolean
+        default: false
+      
     secrets:
       SSH_PRIVATE_KEY:
-        required: true
+        required: false
       ACCESS_GITHUB_TOKEN:
         required: true
 jobs:
@@ -110,6 +116,7 @@ jobs:
           force_orphan: true
 
   matrix:
+    if: inputs.deploy_to_server == true
     needs: [setup-branch]
     runs-on: ubuntu-latest
     outputs:
