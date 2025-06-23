@@ -119,6 +119,9 @@ jobs:
       GIT_MESSAGE: ${{ steps.git_info.outputs.GIT_MESSAGE }}
 
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
       - name: Generate git info for matrix
         id: git_info
         run: |
