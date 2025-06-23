@@ -110,6 +110,7 @@ jobs:
           force_orphan: true
   
   matrix:
+    needs: [setup-branch]
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.matrix.outputs.matrix }}
@@ -121,7 +122,7 @@ jobs:
       - name: Generate git info for matrix
         id: git_info
         run: |
-          git fetch origin build_${{ github.ref_name }}:build_tmp_branch
+          git fetch origin build_${{ needs.setup-branch.outputs.branch_name }}:build_tmp_branch
           GIT_COMMIT=$(git rev-parse build_tmp_branch)
           GIT_AUTHOR=$(git log -1 --pretty=format:'%an' build_tmp_branch)
           GIT_MESSAGE=$(git log -1 --pretty=format:'%s' build_tmp_branch)
@@ -141,7 +142,7 @@ jobs:
           echo "matrix={\"include\": $MATRIX_JSON}" >> $GITHUB_OUTPUT
 
   deploy-server:
-    needs: matrix
+    needs: [setup-build, matrix]
     runs-on: ubuntu-latest
     strategy:
       matrix: ${{ fromJson(needs.matrix.outputs.matrix) }}
