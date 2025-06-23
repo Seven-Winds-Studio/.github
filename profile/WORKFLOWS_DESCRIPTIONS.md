@@ -9,7 +9,7 @@
 
 - Пример использования:
 
-  ```yml
+```yml
 name: Frontend Build Wrapper
 
 on:
@@ -82,7 +82,7 @@ jobs:
     secrets:
       SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY_PROD }}
       ACCESS_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  ```
+```
 
 ---
 
