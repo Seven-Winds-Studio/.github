@@ -108,7 +108,7 @@ jobs:
           publish_branch: "build_${{ needs.setup-branch.outputs.branch_name }}"
           publish_dir: build
           force_orphan: true
-  
+
   matrix:
     needs: [setup-branch]
     runs-on: ubuntu-latest
@@ -188,8 +188,8 @@ jobs:
             ${{ matrix.frontend_update_script }} "${{ needs.matrix.outputs.GIT_COMMIT }}" "${{ needs.matrix.outputs.GIT_AUTHOR }}" "${{ needs.matrix.outputs.GIT_MESSAGE }}"
 
   notify-build-failure:
-    if: failure() && needs.matrix.result == 'failure'
-    needs: matrix
+    if: failure() && (needs.setup-branch.result == 'failure' || needs.setup-version.result == 'failure' || needs.setup-build.result == 'failure' || needs.matrix.result == 'failure' || needs.deploy-gh.result == 'failure')
+    needs: [setup-branch, setup-version, setup-build, matrix, deploy-gh]
     runs-on: ubuntu-latest
     strategy:
       matrix: ${{ fromJson(needs.matrix.outputs.matrix) }}
@@ -201,4 +201,3 @@ jobs:
           curl -X POST -H "Content-Type: application/json" \
           -d "{\"content\": \"❌ Build step failed on branch \`${{ github.ref_name }}\`\"}" \
             ${{ matrix.discord_hook }}
-
