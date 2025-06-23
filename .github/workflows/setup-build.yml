@@ -1,0 +1,113 @@
+name: Setup Build
+
+on:
+  workflow_call:
+    inputs:
+      package_manager:
+        description: "npm | yarn | bun"
+        required: true
+        type: string
+      full_version:
+        description: "Full version string, e.g., major.minor.patch-branch.build"
+        required: false
+        type: string
+    secrets:
+      ACCESS_GITHUB_TOKEN:
+        required: true
+
+jobs:
+  setup-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20.x"
+
+      - name: Configure .npmrc for GitHub Packages
+        run: |
+          echo "//npm.pkg.github.com/:_authToken=${{ secrets.ACCESS_GITHUB_TOKEN }}" > ~/.npmrc
+          echo "@jenesei-software:registry=https://npm.pkg.github.com/" >> ~/.npmrc
+          if [ -f .npmrc ]; then cp .npmrc ~/.npmrc; fi
+
+      - name: Setup Bun
+        if: inputs.package_manager == 'bun'
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.npm
+            ~/.cache/yarn
+            ~/.bun/install/cache
+          key: |
+            r1/${{ runner.os }}/${{ inputs.package_manager }}/deps/${{ hashFiles('**/package-lock.json', '**/yarn.lock', '**/bun.lockb') }}
+          restore-keys: |
+            r1/${{ runner.os }}/${{ inputs.package_manager }}/deps/
+
+      - name: Install dependencies
+        env:
+          BUN_AUTH_TOKEN: ${{ secrets.ACCESS_GITHUB_TOKEN }}
+          NPM_CONFIG_USERCONFIG: ~/.npmrc
+        run: |
+          case "${{ inputs.package_manager }}" in
+            npm)
+              npm ci
+              ;;
+            yarn)
+              corepack enable
+              yarn install --frozen-lockfile
+              ;;
+            bun)
+              bun install --no-save
+              ;;
+            *)
+              echo "Unknown package manager: ${{ inputs.package_manager }}"
+              exit 1
+              ;;
+          esac
+
+      - name: Write version to .env
+        run: |
+          touch .env
+          if grep -q "^VITE_APP_VERSION=" .env; then
+            sed -i "s/^VITE_APP_VERSION=.*/VITE_APP_VERSION=${{ inputs.full_version }}/" .env
+          else
+            echo "VITE_APP_VERSION=${{ inputs.full_version }}" >> .env
+          fi
+
+      - name: Build project
+        run: |
+          BRANCH_NAME="${{ github.ref_name }}"
+          echo "Building for branch: $BRANCH_NAME"
+          case "${{ inputs.package_manager }}" in
+            npm)
+              npm run build:$BRANCH_NAME
+              ;;
+            yarn)
+              yarn build:$BRANCH_NAME
+              ;;
+            bun)
+              bun run build:$BRANCH_NAME
+              ;;
+          esac
+
+      - name: Write build info
+        run: |
+          COMMIT="$(git rev-parse --short HEAD)"
+          DATE="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+          echo "version: ${{ inputs.full_version }}" > build/build-info.txt
+          echo "commit: $COMMIT" >> build/build-info.txt
+          echo "date: $DATE" >> build/build-info.txt
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: artifact-build
+          path: build
