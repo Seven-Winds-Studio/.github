@@ -97,12 +97,12 @@ jobs:
           fi
 
       - name: Configure npm for GitHub Packages
-        if: github.event.inputs.registry_type == 'github' || github.event.inputs.registry_type == 'all'
+        if: inputs.registry_type == 'github' || inputs.registry_type == 'all'
         run: |
           echo "//npm.pkg.github.com/:_authToken=${{ secrets.ACCESS_GITHUB_TOKEN }}" >> ~/.npmrc
 
       - name: Check version in GitHub Packages
-        if: github.event.inputs.registry_type == 'github' || github.event.inputs.registry_type == 'all'
+        if: inputs.registry_type == 'github' || inputs.registry_type == 'all'
         id: check_version_github
         run: |
           EXISTING_VERSION=$(npm view $PACKAGE_NAME versions --registry https://npm.pkg.github.com --json | grep ${VERSION} || true)
