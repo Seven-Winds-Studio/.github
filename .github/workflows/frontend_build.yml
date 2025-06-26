@@ -8,7 +8,7 @@ on:
         required: false
         type: string
       package_manager:
-        description: "npm | yarn | bun"
+        description: "npm | yarn | bun | pnpm"
         required: false
         default: "npm"
         type: string
