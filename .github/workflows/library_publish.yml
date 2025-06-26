@@ -118,8 +118,7 @@ jobs:
           fi
 
       - name: Check version exists NPM
-        if: github.event.inputs.registry_type == 'npm' || github.event.inputs.registry_type == 'all'
-        id: check_version_npm
+        if: inputs.registry_type == 'npm' || inputs.registry_type == 'all'
         run: |
           EXISTING_VERSION=$(npm view $PACKAGE_NAME versions --json | grep ${VERSION} || true)
           if [ -n "$EXISTING_VERSION" ]; then
