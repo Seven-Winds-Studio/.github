@@ -41,6 +41,11 @@ jobs:
         with:
           bun-version: latest
 
+      - name: Setup pnpm
+        if: inputs.package_manager == 'pnpm'
+        run: |
+          npm install -g pnpm
+
       - name: Clean Git
         run: |
           git reset --hard || echo "No changes to reset"
