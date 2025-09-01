@@ -77,7 +77,7 @@ jobs:
               ;;
             bun)
              # Установка приватных пакетов через npm, т.к. Bun криво работает с GitHub Package
-              npm ci
+              npm ci --legacy-peer-deps
               ;;
             pnpm)
               pnpm install --frozen-lockfile
