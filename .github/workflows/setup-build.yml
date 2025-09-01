@@ -32,7 +32,6 @@ jobs:
           echo "ACCESS_GITHUB_TOKEN length: ${#ACCESS_GITHUB_TOKEN}"
           echo "ACCESS_GITHUB_TOKEN starts with: ${ACCESS_GITHUB_TOKEN:0:6}..."
           echo "ACCESS_GITHUB_TOKEN ends with: ...${ACCESS_GITHUB_TOKEN: -4}"
-          echo "ACCESS_GITHUB_TOKEN sha256: $(echo -n $ACCESS_GITHUB_TOKEN | sha256sum | cut -d' ' -f1)"
         env:
           ACCESS_GITHUB_TOKEN: ${{ secrets.ACCESS_GITHUB_TOKEN }}
 
