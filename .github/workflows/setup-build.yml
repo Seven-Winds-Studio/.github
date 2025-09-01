@@ -27,29 +27,10 @@ jobs:
         with:
           node-version: "20.x"
 
-      - name: Debug ACCESS_GITHUB_TOKEN
-        run: |
-          echo "ACCESS_GITHUB_TOKEN length: ${#ACCESS_GITHUB_TOKEN}"
-          echo "ACCESS_GITHUB_TOKEN starts with: ${ACCESS_GITHUB_TOKEN:0:6}..."
-          echo "ACCESS_GITHUB_TOKEN ends with: ...${ACCESS_GITHUB_TOKEN: -4}"
-        env:
-          ACCESS_GITHUB_TOKEN: ${{ secrets.ACCESS_GITHUB_TOKEN }}
-
       - name: Setup npmrc for GitHub Packages
         run: |
           echo "//npm.pkg.github.com/:_authToken=${{ secrets.ACCESS_GITHUB_TOKEN }}" > ~/.npmrc
           echo "@seven-winds-studio:registry=https://npm.pkg.github.com/" >> ~/.npmrc
-
-      - name: Debug .npmrc and token read
-        run: |
-          echo "=== .npmrc content ==="
-          cat ~/.npmrc || echo "No ~/.npmrc file found"
-          echo
-          echo "=== Grep for authToken (masked automatically) ==="
-          grep "_authToken" ~/.npmrc || echo "No authToken entry"
-          echo
-          echo "=== NPM config list (sanitized) ==="
-          npm config list
 
       - name: Setup pnpm
         if: inputs.package_manager == 'pnpm'
@@ -88,6 +69,8 @@ jobs:
               yarn install --frozen-lockfile
               ;;
             bun)
+              echo "//npm.pkg.github.com/:_authToken=${{ secrets.ACCESS_GITHUB_TOKEN }}" > ~/.npmrc
+              echo "@seven-winds-studio:registry=https://npm.pkg.github.com/" >> ~/.npmrc
               bun install --no-save
               ;;
             pnpm)
