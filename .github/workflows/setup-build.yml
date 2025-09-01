@@ -4,7 +4,7 @@ on:
   workflow_call:
     inputs:
       package_manager:
-        description: "npm | yarn | bun"
+        description: "npm | yarn | bun | pnpm"
         required: true
         type: string
       full_version:
@@ -30,9 +30,9 @@ jobs:
       # Настраиваем .npmrc для приватных пакетов
       - name: Setup npmrc for GitHub Packages
         run: |
-          echo "//npm.pkg.github.com/:_authToken=${{ secrets.ACCESS_GITHUB_TOKEN }}" > .npmrc
-          echo "@seven-winds-studio:registry=https://npm.pkg.github.com/" >> .npmrc
-          if [ -f .npmrc ]; then cp .npmrc ~/.npmrc; fi
+          mkdir -p ~/.npm
+          echo "//npm.pkg.github.com/:_authToken=${{ secrets.ACCESS_GITHUB_TOKEN }}" > ~/.npmrc
+          echo "@seven-winds-studio:registry=https://npm.pkg.github.com/" >> ~/.npmrc
 
       # Установка pnpm (если выбран)
       - name: Setup pnpm
@@ -65,11 +65,12 @@ jobs:
       # Важно: приватные пакеты ставим через npm/pnpm, Bun используем только для сборки
       - name: Install dependencies
         env:
+          BUN_AUTH_TOKEN: ${{ secrets.ACCESS_GITHUB_TOKEN }}
           NPM_CONFIG_USERCONFIG: ~/.npmrc
         run: |
           case "${{ inputs.package_manager }}" in
             npm)
-              npm ci
+              npm ci --legacy-peer-deps
               ;;
             yarn)
               corepack enable
